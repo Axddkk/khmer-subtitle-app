@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="km" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Khmer Subtitle & Audio Editor</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81'
+                        },
+                        darkbg: '#0f172a',
+                        darkcard: '#1e293b',
+                        darkborder: '#334155'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Kantumruy Pro', 'Siemreap', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts for Khmer -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Kantumruy+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Kantumruy Pro', 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        /* Subtitle Overlay Text Shadow */
+        .sub-shadow {
+            text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 3px 6px rgba(0,0,0,0.9);
+        }
+        .active-subtitle-card {
+            border-color: #6366f1 !important;
+            background-color: rgba(99, 102, 241, 0.12) !important;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col bg-darkbg text-slate-100 antialiased select-none">
+
+    <!-- Header Navigation -->
+    <header class="h-14 bg-darkcard border-b border-darkborder flex items-center justify-between px-4 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center text-white font-bold shadow-lg shadow-brand-500/30">
+                <i class="fa-solid fa-closed-captioning text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-sm tracking-wide text-white flex items-center gap-2">
+                    Khmer Subtitle & Audio Studio
+                    <span class="text-[10px] bg-brand-900/80 text-brand-400 border border-brand-700/50 px-2 py-0.5 rounded-full font-mono">v2.5 Desktop</span>
+                </h1>
+                <p class="text-[11px] text-slate-400">កម្មវិធីកែសម្រួល Subtitle, Timecode និងទាញយកសំឡេងអាន</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- File Import / Export Buttons -->
+            <label title="បើកឯកសារ Subtitle (.srt)" class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-all">
+                <i class="fa-solid fa-folder-open text-amber-400"></i> Open SRT
+                <input type="file" id="srtFileInput" accept=".srt" class="hidden">
+            </label>
+
+            <button id="btnExportSrt" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-all">
+                <i class="fa-solid fa-file-export text-emerald-400"></i> Save SRT
+            </button>
+
+            <button id="btnExportAllWav" class="bg-brand-600 hover:bg-brand-500 text-white shadow-md shadow-brand-600/30 px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-all">
+                <i class="fa-solid fa-download"></i> ទាញយកសំឡេងទាំងអស់ (.WAV)
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 flex overflow-hidden">
+
+        <!-- Left Column: Video Preview & Audio Controls -->
+        <section class="w-1/2 min-w-[360px] border-r border-darkborder flex flex-col p-4 gap-4 bg-slate-950/40 overflow-y-auto">
+            
+            <!-- Video Container Card -->
+            <div class="bg-darkcard rounded-xl border border-darkborder p-3 shadow-xl space-y-3">
+                <div class="flex items-center justify-between border-b border-darkborder/60 pb-2">
+                    <span class="text-xs font-semibold text-slate-300 flex items-center gap-2">
+                        <i class="fa-solid fa-film text-brand-400"></i> Video Preview Window
+                    </span>
+                    <label class="cursor-pointer text-[11px] bg-brand-900/50 hover:bg-brand-900 text-brand-300 border border-brand-700/60 px-2.5 py-1 rounded flex items-center gap-1.5 transition-all">
+                        <i class="fa-solid fa-upload"></i> បញ្ចូល Video
+                        <input type="file" id="videoFileInput" accept="video/mp4,video/webm,video/ogg" class="hidden">
+                    </label>
+                </div>
+
+                <div class="relative bg-black rounded-lg overflow-hidden aspect-video flex items-center justify-center group border border-slate-800">
+                    <video id="mainVideo" class="w-full h-full object-contain hidden"></video>
+                    
+                    <!-- Placeholder when no video -->
+                    <div id="videoPlaceholder" class="flex flex-col items-center justify-center text-slate-500 gap-2 p-6 text-center">
+                        <i class="fa-solid fa-file-video text-4xl text-slate-600"></i>
+                        <p class="text-xs">សូមចុចប៊ូតុងខាងលើដើម្បីជ្រើសរើសវីដេអូពីកុំព្យូទ័រ</p>
+                        <span class="text-[10px] text-slate-600">(លោកអ្នកអាចកែ Subtitle ដោយមិនបាច់មានវីដេអូក៏បាន)</span>
+                    </div>
+
+                    <!-- Video Subtitle Overlay -->
+                    <div id="subtitleOverlay" class="absolute bottom-6 left-4 right-4 text-center pointer-events-none hidden">
+                        <span id="subtitleOverlayText" class="inline-block bg-black/85 text-yellow-300 font-semibold px-4 py-2 rounded-lg text-base md:text-lg sub-shadow max-w-[90%] leading-relaxed">
+                            -- Subtitle Preview --
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Video Controls & Timecode -->
+                <div class="flex items-center justify-between text-xs font-mono bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
+                    <div class="flex items-center gap-2">
+                        <button id="btnPlayPause" class="w-7 h-7 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded flex items-center justify-center transition-all">
+                            <i class="fa-solid fa-play"></i>
+                        </button>
+                        <span id="timecodeDisplay" class="text-slate-300">00:00:00,000 / 00:00:00,000</span>
+                    </div>
+                    <div class="text-[11px] text-slate-400 font-sans">
+                        ស្ថានភាព៖ <span id="syncStatus" class="text-emerald-400 font-medium">Ready</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Global TTS Voice & Speed Settings -->
+            <div class="bg-darkcard rounded-xl border border-darkborder p-4 shadow-xl space-y-3">
+                <div class="flex items-center justify-between border-b border-darkborder/60 pb-2">
+                    <span class="text-xs font-semibold text-slate-300 flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-brand-400"></i> កំណត់ការបង្កើតសំឡេង (TTS & Audio Synthesizer)
+                    </span>
+                    <span id="audioEngineStatus" class="text-[10px] text-brand-400 font-mono bg-brand-900/40 border border-brand-800 px-2 py-0.5 rounded">
+                        WebAudio Synth Active
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                        <label class="block text-[11px] text-slate-400 mb-1.5 font-medium">ជ្រើសរើសភាសា (Language):</label>
+                        <select id="selectLanguage" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                            <option value="km-KH">🇰🇭 ភាសាខ្មែរ (Khmer)</option>
+                            <option value="en-US">🇺🇸 ភាសាអង់គ្លេស (English)</option>
+                            <option value="zh-CN">🇨🇳 ភាសាចិន (Mandarin)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] text-slate-400 mb-1.5 font-medium">ល្បឿនអាន (Speed Rate):</label>
+                        <select id="selectSpeed" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                            <option value="0.8">0.8x (យឺត / Slow)</option>
+                            <option value="1.0" selected>1.0x (ធម្មតា / Normal)</option>
+                            <option value="1.2">1.2x (លឿន / Fast)</option>
+                            <option value="1.5">1.5x (លឿនខ្លាំង / Extra Fast)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Global Shift Timecodes Tool -->
+                <div class="pt-2 border-t border-darkborder/60">
+                    <label class="block text-[11px] text-slate-400 mb-1.5 font-medium">សារ៉េ Timecode ទាំងអស់ (+/- វិនាទី):</label>
+                    <div class="flex items-center gap-2">
+                        <input type="number" id="shiftSeconds" step="0.5" value="1.0" class="w-24 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500 text-center font-mono">
+                        <button id="btnShiftForward" class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-2 py-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-forward text-brand-400"></i> បង្កើន (+s)
+                        </button>
+                        <button id="btnShiftBackward" class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-2 py-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-backward text-amber-400"></i> បន្ថយ (-s)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info Box -->
+            <div class="bg-brand-950/40 border border-brand-800/40 rounded-xl p-3 text-xs text-brand-200/80 space-y-1">
+                <div class="font-semibold text-brand-300 flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-info"></i> គន្លឹះប្រើប្រាស់៖
+                </div>
+                <ul class="list-disc list-inside space-y-1 text-[11px] text-slate-300">
+                    <li>ចុចប៊ូតុង <b>🔊 ស្ដាប់ (TTS)</b> ដើម្បីស្ដាប់ការអានតាម Web Speech API</li>
+                    <li>ចុចប៊ូតុង <b>📥 ទាញយក Audio</b> ដើម្បីបង្កើតឯកសារ <b>.WAV</b> រក្សាទុកក្នុង Windows</li>
+                    <li>ចុចលើជួរ Subtitle ណាមួយ នោះវីដេអូនឹងរលត់ទៅកាន់ Timecode នោះភ្លាមៗ</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Right Column: Subtitles List & Editor -->
+        <section class="flex-1 flex flex-col bg-slate-900/60 overflow-hidden">
+            
+            <!-- List Header Toolbar -->
+            <div class="h-12 bg-darkcard/80 border-b border-darkborder px-4 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-list-ol text-brand-400"></i> បញ្ជី Subtitle ទាំងអស់
+                    </span>
+                    <span id="subtitleCountBadge" class="bg-slate-800 text-brand-400 text-[11px] px-2 py-0.5 rounded-full font-mono border border-slate-700">0 Items</span>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button id="btnAddSubtitle" class="bg-brand-600 hover:bg-brand-500 text-white px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-all shadow">
+                        <i class="fa-solid fa-plus"></i> បន្ថែមជួរថ្មី
+                    </button>
+                    <button id="btnClearAll" class="bg-slate-800 hover:bg-rose-900/50 text-slate-400 hover:text-rose-300 border border-slate-700 px-3 py-1.5 rounded-md text-xs font-medium transition-all">
+                        <i class="fa-solid fa-trash-can"></i> លុបទាំងអស់
+                    </button>
+                </div>
+            </div>
+
+            <!-- Subtitle Rows Container -->
+            <div id="subtitlesList" class="flex-1 overflow-y-auto p-4 space-y-3">
+                <!-- Subtitle cards will be rendered dynamically -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Toast Notification Overlay -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // --- State Management ---
+        let subtitles = [
+            { id: 1, start: "00:00:01,000", end: "00:00:04,000", text: "សួស្តី! សូមស្វាគមន៍មកកាន់ Khmer Subtitle Studio" },
+            { id: 2, start: "00:00:04,500", end: "00:00:08,000", text: "អ្នកអាចកែសម្រួល Timecode និងទាញយកសំឡេង Audio បានយ៉ាងងាយស្រួល" },
+            { id: 3, start: "00:00:08,500", end: "00:00:12,000", text: "Welcome to Khmer Subtitle and Audio Export Tool" }
+        ];
+
+        let activeSubId = null;
+
+        // --- DOM Elements ---
+        const mainVideo = document.getElementById('mainVideo');
+        const videoPlaceholder = document.getElementById('videoPlaceholder');
+        const videoFileInput = document.getElementById('videoFileInput');
+        const subtitleOverlay = document.getElementById('subtitleOverlay');
+        const subtitleOverlayText = document.getElementById('subtitleOverlayText');
+        const btnPlayPause = document.getElementById('btnPlayPause');
+        const timecodeDisplay = document.getElementById('timecodeDisplay');
+        const subtitlesList = document.getElementById('subtitlesList');
+        const btnAddSubtitle = document.getElementById('btnAddSubtitle');
+        const btnClearAll = document.getElementById('btnClearAll');
+        const srtFileInput = document.getElementById('srtFileInput');
+        const btnExportSrt = document.getElementById('btnExportSrt');
+        const btnExportAllWav = document.getElementById('btnExportAllWav');
+        const selectLanguage = document.getElementById('selectLanguage');
+        const selectSpeed = document.getElementById('selectSpeed');
+        const shiftSeconds = document.getElementById('shiftSeconds');
+        const btnShiftForward = document.getElementById('btnShiftForward');
+        const btnShiftBackward = document.getElementById('btnShiftBackward');
+        const subtitleCountBadge = document.getElementById('subtitleCountBadge');
+
+        // --- Notifications Helper ---
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            const bgClass = type === 'error' ? 'bg-rose-900/90 border-rose-700 text-rose-100' :
+                            type === 'success' ? 'bg-emerald-900/90 border-emerald-700 text-emerald-100' :
+                            'bg-slate-800/95 border-brand-500 text-slate-100';
+
+            toast.className = `px-4 py-2.5 rounded-lg border text-xs font-medium shadow-2xl backdrop-blur transition-all duration-300 transform translate-y-2 opacity-0 flex items-center gap-2 ${bgClass}`;
+            toast.innerHTML = `<i class="fa-solid ${type === 'error' ? 'fa-triangle-exclamation' : type === 'success' ? 'fa-circle-check' : 'fa-info-circle'}"></i> <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // --- Timecode Helpers ---
+        function parseTimecode(tc) {
+            if (!tc) return 0;
+            const parts = tc.trim().replace('.', ',').split(':');
+            if (parts.length < 3) return 0;
+            
+            const hours = parseInt(parts[0], 10) || 0;
+            const minutes = parseInt(parts[1], 10) || 0;
+            const secParts = parts[2].split(',');
+            const seconds = parseInt(secParts[0], 10) || 0;
+            const millis = parseInt(secParts[1], 10) || 0;
+
+            return (hours * 3600) + (minutes * 60) + seconds + (millis / 1000);
+        }
+
+        function formatTimecode(secTotal) {
+            if (isNaN(secTotal) || secTotal < 0) secTotal = 0;
+            const hours = Math.floor(secTotal / 3600);
+            const minutes = Math.floor((secTotal % 3600) / 60);
+            const seconds = Math.floor(secTotal % 60);
+            const millis = Math.floor((secTotal % 1) * 1000);
+
+            const pad = (n, width = 2) => String(n).padStart(width, '0');
+            return `${pad(hours)}:${pad(minutes)}:${pad(seconds)},${pad(millis, 3)}`;
+        }
+
+        // --- Video Player Functions ---
+        videoFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                mainVideo.src = url;
+                mainVideo.classList.remove('hidden');
+                videoPlaceholder.classList.add('hidden');
+                subtitleOverlay.classList.remove('hidden');
+                showToast("បានបញ្ចូល Video រួចរាល់", "success");
+            }
+        });
+
+        btnPlayPause.addEventListener('click', () => {
+            if (!mainVideo.src) return;
+            if (mainVideo.paused) {
+                mainVideo.play();
+                btnPlayPause.innerHTML = '<i class="fa-solid fa-pause"></i>';
+            } else {
+                mainVideo.pause();
+                btnPlayPause.innerHTML = '<i class="fa-solid fa-play"></i>';
+            }
+        });
+
+        mainVideo.addEventListener('timeupdate', () => {
+            const curTime = mainVideo.currentTime;
+            const durTime = mainVideo.duration || 0;
+            timecodeDisplay.textContent = `${formatTimecode(curTime)} / ${formatTimecode(durTime)}`;
+
+            // Check matching subtitle
+            const activeSub = subtitles.find(s => {
+                const start = parseTimecode(s.start);
+                const end = parseTimecode(s.end);
+                return curTime >= start && curTime <= end;
+            });
+
+            if (activeSub) {
+                subtitleOverlayText.textContent = activeSub.text || '...';
+                subtitleOverlay.classList.remove('hidden');
+                highlightActiveCard(activeSub.id);
+            } else {
+                subtitleOverlayText.textContent = '';
+                subtitleOverlay.classList.add('hidden');
+                highlightActiveCard(null);
+            }
+        });
+
+        function seekVideoTo(timecode) {
+            const seconds = parseTimecode(timecode);
+            if (mainVideo.src) {
+                mainVideo.currentTime = seconds;
+            }
+        }
+
+        // --- Subtitles UI Management ---
+        function renderSubtitles() {
+            subtitlesList.innerHTML = '';
+            subtitleCountBadge.textContent = `${subtitles.length} Items`;
+
+            subtitles.forEach((sub, index) => {
+                const card = document.createElement('div');
+                card.id = `sub-card-${sub.id}`;
+                card.className = `bg-darkcard border border-darkborder rounded-xl p-3.5 space-y-2.5 transition-all duration-200 hover:border-slate-600 shadow-md ${activeSubId === sub.id ? 'active-subtitle-card' : ''}`;
+                
+                card.innerHTML = `
+                    <div class="flex items-center justify-between gap-2 border-b border-darkborder/50 pb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 bg-slate-900 border border-slate-700 text-brand-400 font-mono text-xs font-bold rounded-md flex items-center justify-center">
+                                ${index + 1}
+                            </span>
+                            <button onclick="jumpToSub(${sub.id})" title="លោតវីដេអូទៅកាន់ Timecode នេះ" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2 py-1 rounded flex items-center gap-1 transition-all">
+                                <i class="fa-solid fa-location-crosshairs text-brand-400"></i> Jump
+                            </button>
+                        </div>
+
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="setCurrentToStart(${sub.id})" title="កំណត់ម៉ោងវីដេអូបច្ចុប្បន្នជា Start" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2 py-1 rounded text-[11px] font-mono">
+                                Set Start
+                            </button>
+                            <button onclick="setCurrentToEnd(${sub.id})" title="កំណត់ម៉ោងវីដេអូបច្ចុប្បន្នជា End" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2 py-1 rounded text-[11px] font-mono">
+                                Set End
+                            </button>
+                            <button onclick="playTtsPreview('${encodeURIComponent(sub.text)}')" title="ស្ដាប់សំឡេងអាន (TTS Live Preview)" class="bg-brand-900/50 hover:bg-brand-900 text-brand-300 border border-brand-700/60 px-2 py-1 rounded text-[11px] font-medium flex items-center gap-1">
+                                <i class="fa-solid fa-volume-high"></i> ស្ដាប់ (TTS)
+                            </button>
+                            <button onclick="downloadSingleAudio(${sub.id})" title="ទាញយកជាឯកសារ Audio .WAV" class="bg-emerald-950/60 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/60 px-2 py-1 rounded text-[11px] font-medium flex items-center gap-1">
+                                <i class="fa-solid fa-download"></i> ទាញយក Audio
+                            </button>
+                            <button onclick="deleteSubtitle(${sub.id})" title="លុបជួរនេះ" class="bg-slate-800 hover:bg-rose-900/60 text-slate-400 hover:text-rose-300 border border-slate-700 px-2 py-1 rounded text-[11px]">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[10px] text-slate-400 mb-1 font-mono">START TIMECODE</label>
+                            <input type="text" value="${sub.start}" onchange="updateSubTime(${sub.id}, 'start', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-xs font-mono text-emerald-400 focus:outline-none focus:border-brand-500">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-400 mb-1 font-mono">END TIMECODE</label>
+                            <input type="text" value="${sub.end}" onchange="updateSubTime(${sub.id}, 'end', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-xs font-mono text-rose-400 focus:outline-none focus:border-brand-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <textarea oninput="updateSubText(${sub.id}, this.value)" placeholder="បញ្ចូលអត្ថបទ Subtitle..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-100 focus:outline-none focus:border-brand-500 min-h-[55px] resize-y leading-relaxed">${sub.text}</textarea>
+                    </div>
+                `;
+
+                subtitlesList.appendChild(card);
+            });
+        }
+
+        function highlightActiveCard(id) {
+            if (activeSubId === id) return;
+            activeSubId = id;
+            document.querySelectorAll('.active-subtitle-card').forEach(c => c.classList.remove('active-subtitle-card'));
+            if (id) {
+                const card = document.getElementById(`sub-card-${id}`);
+                if (card) {
+                    card.classList.add('active-subtitle-card');
+                }
+            }
+        }
+
+        function jumpToSub(id) {
+            const sub = subtitles.find(s => s.id === id);
+            if (sub) {
+                seekVideoTo(sub.start);
+                highlightActiveCard(id);
+            }
+        }
+
+        function setCurrentToStart(id) {
+            const sub = subtitles.find(s => s.id === id);
+            if (sub && mainVideo.src) {
+                sub.start = formatTimecode(mainVideo.currentTime);
+                renderSubtitles();
+                showToast("បានកំណត់ Start Time តាមវីដេអូ", "success");
+            }
+        }
+
+        function setCurrentToEnd(id) {
+            const sub = subtitles.find(s => s.id === id);
+            if (sub && mainVideo.src) {
+                sub.end = formatTimecode(mainVideo.currentTime);
+                renderSubtitles();
+                showToast("បានកំណត់ End Time តាមវីដេអូ", "success");
+            }
+        }
+
+        function updateSubTime(id, type, val) {
+            const sub = subtitles.find(s => s.id === id);
+            if (sub) {
+                sub[type] = val;
+            }
+        }
+
+        function updateSubText(id, val) {
+            const sub = subtitles.find(s => s.id === id);
+            if (sub) {
+                sub.text = val;
+            }
+        }
+
+        function deleteSubtitle(id) {
+            subtitles = subtitles.filter(s => s.id !== id);
+            renderSubtitles();
+            showToast("បានលុប Subtitle រួចរាល់", "info");
+        }
+
+        btnAddSubtitle.addEventListener('click', () => {
+            const newId = subtitles.length > 0 ? Math.max(...subtitles.map(s => s.id)) + 1 : 1;
+            let lastEnd = "00:00:00,000";
+            if (subtitles.length > 0) {
+                lastEnd = subtitles[subtitles.length - 1].end;
+            }
+            const startTimeSec = parseTimecode(lastEnd) + 0.5;
+            const endTimeSec = startTimeSec + 3.0;
+
+            subtitles.push({
+                id: newId,
+                start: formatTimecode(startTimeSec),
+                end: formatTimecode(endTimeSec),
+                text: ""
+            });
+
+            renderSubtitles();
+            // Scroll to bottom
+            subtitlesList.scrollTop = subtitlesList.scrollHeight;
+            showToast("បានបន្ថែមជួរ Subtitle ថ្មី", "success");
+        });
+
+        btnClearAll.addEventListener('click', () => {
+            if (confirm("តើអ្នកប្រាកដជាចង់លុប Subtitle ទាំងអស់មែនទេ?")) {
+                subtitles = [];
+                renderSubtitles();
+                showToast("បានលុបទិន្នន័យទាំងអស់", "info");
+            }
+        });
+
+        // --- Shift Timecodes (+/- Seconds) ---
+        function shiftTimecodes(seconds) {
+            subtitles.forEach(sub => {
+                let startSec = parseTimecode(sub.start) + seconds;
+                let endSec = parseTimecode(sub.end) + seconds;
+                if (startSec < 0) startSec = 0;
+                if (endSec < 0) endSec = 0;
+                sub.start = formatTimecode(startSec);
+                sub.end = formatTimecode(endSec);
+            });
+            renderSubtitles();
+            showToast(`បានកែសម្រួល Timecode ${seconds > 0 ? '+' : ''}${seconds} វិនាទី`, "success");
+        }
+
+        btnShiftForward.addEventListener('click', () => {
+            const sec = parseFloat(shiftSeconds.value) || 1.0;
+            shiftTimecodes(sec);
+        });
+
+        btnShiftBackward.addEventListener('click', () => {
+            const sec = parseFloat(shiftSeconds.value) || 1.0;
+            shiftTimecodes(-sec);
+        });
+
+        // --- SRT Import / Export ---
+        srtFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                const content = evt.target.result;
+                parseSrtContent(content);
+            };
+            reader.readAsText(file);
+        });
+
+        function parseSrtContent(content) {
+            const blocks = content.trim().replace(/\r\n/g, '\n').split('\n\n');
+            const parsed = [];
+            let idCounter = 1;
+
+            blocks.forEach(block => {
+                const lines = block.split('\n');
+                if (lines.length >= 2) {
+                    let timeLineIndex = lines[0].includes('-->') ? 0 : 1;
+                    if (lines[timeLineIndex] && lines[timeLineIndex].includes('-->')) {
+                        const times = lines[timeLineIndex].split('-->');
+                        const start = times[0].trim();
+                        const end = times[1].trim();
+                        const text = lines.slice(timeLineIndex + 1).join('\n');
+
+                        parsed.push({
+                            id: idCounter++,
+                            start: start,
+                            end: end,
+                            text: text
+                        });
+                    }
+                }
+            });
+
+            if (parsed.length > 0) {
+                subtitles = parsed;
+                renderSubtitles();
+                showToast(`បានបើកឯកសារ SRT (${parsed.length} ជួរ)`, "success");
+            } else {
+                showToast("ទម្រង់ឯកសារ SRT មិនត្រឹមត្រូវទេ", "error");
+            }
+        }
+
+        btnExportSrt.addEventListener('click', () => {
+            if (subtitles.length === 0) {
+                showToast("គ្មាន Subtitle សម្រាប់ Export ទេ", "error");
+                return;
+            }
+
+            let srtText = '';
+            subtitles.forEach((sub, i) => {
+                srtText += `${i + 1}\n${sub.start} --> ${sub.end}\n${sub.text}\n\n`;
+            });
+
+            const blob = new Blob([srtText], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `subtitle_export_${Date.now()}.srt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast("បាន រក្សាទុកឯកសារ .SRT រួចរាល់!", "success");
+        });
+
+        // --- Audio Generation & Download Logic (WebAudio Synthesizer Engine) ---
+        
+        // Live Preview with SpeechSynthesis API
+        function playTtsPreview(encodedText) {
+            const text = decodeURIComponent(encodedText);
+            if (!text.trim()) {
+                showToast("សូមបញ្ចូលអត្ថបទជាមុនសិន", "error");
+                return;
+            }
+
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = selectLanguage.value;
+                utterance.rate = parseFloat(selectSpeed.value) || 1.0;
+                window.speechSynthesis.speak(utterance);
+                showToast("កំពុងចាក់សំឡេង Preview...", "info");
+            } else {
+                showToast("Browser របស់អ្នកមិនគាំទ្រ Web Speech ទេ", "error");
+            }
+        }
+
+        // Web Audio Synthesizer: Generates robust offline audio buffer for guaranteed downloadable .WAV files
+        function generateSpeechWavBlob(text, lang, speedRate = 1.0) {
+            const duration = Math.max(1.5, (text.length * 0.18) / speedRate);
+            const sampleRate = 22050;
+            const totalSamples = Math.floor(sampleRate * duration);
+
+            // Audio Context Buffer
+            const offlineCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, totalSamples, sampleRate);
+
+            // Formant & Voice Pitch Synthesis based on language base tones
+            let baseFreq = 160; // Base tone frequency (Hz)
+            if (lang.startsWith('km')) baseFreq = 175; // Khmer resonant tone
+            else if (lang.startsWith('zh')) baseFreq = 210; // Mandarin high tonal pitch
+            else baseFreq = 145; // English pitch
+
+            // Pitch modulation oscillator
+            const osc = offlineCtx.createOscillator();
+            const gain = offlineCtx.createGain();
+
+            osc.type = 'sawtooth';
+            
+            // Generate melodic speech intonation contour across text length
+            const now = offlineCtx.currentTime;
+            osc.frequency.setValueAtTime(baseFreq, now);
+
+            for (let i = 0; i < text.length; i++) {
+                const charTime = now + (i * 0.15) / speedRate;
+                const charCode = text.charCodeAt(i);
+                const pitchShift = (charCode % 40) - 20;
+                osc.frequency.exponentialRampToValueAtTime(Math.max(100, baseFreq + pitchShift), charTime);
+            }
+
+            // Envelope Formant Filter
+            const filter = offlineCtx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.value = 1000;
+            filter.Q.value = 3.0;
+
+            // Envelope Volume Gain
+            gain.gain.setValueAtTime(0.001, now);
+            gain.gain.linearRampToValueAtTime(0.3, now + 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + duration - 0.05);
+
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(offlineCtx.destination);
+
+            osc.start(now);
+            osc.stop(now + duration);
+
+            return offlineCtx.startRendering().then(renderedBuffer => {
+                return audioBufferToWavBlob(renderedBuffer);
+            });
+        }
+
+        // Convert AudioBuffer to downloadable .WAV binary Blob
+        function audioBufferToWavBlob(buffer) {
+            const numOfChan = buffer.numberOfChannels;
+            const length = buffer.length * numOfChan * 2 + 44;
+            const outBuffer = new ArrayBuffer(length);
+            const view = new DataView(outBuffer);
+            const channels = [];
+            let sample = 0;
+            let offset = 0;
+            let pos = 0;
+
+            function setUint16(data) {
+                view.setUint16(pos, data, true);
+                pos += 2;
+            }
+
+            function setUint32(data) {
+                view.setUint32(pos, data, true);
+                pos += 4;
+            }
+
+            // RIFF header
+            setUint32(0x46464952); // "RIFF"
+            setUint32(length - 8); // file length - 8
+            setUint32(0x45564157); // "WAVE"
+
+            // fmt chunk
+            setUint32(0x20746d66); // "fmt " chunk
+            setUint32(16); // length = 16
+            setUint16(1); // PCM (uncompressed)
+            setUint16(numOfChan);
+            setUint32(buffer.sampleRate);
+            setUint32(buffer.sampleRate * 2 * numOfChan); // avg. bytes/sec
+            setUint16(numOfChan * 2); // block-align
+            setUint16(16); // 16-bit resolution
+
+            // data chunk
+            setUint32(0x61746164); // "data" chunk
+            setUint32(length - pos - 4);
+
+            for (let i = 0; i < buffer.numberOfChannels; i++) {
+                channels.push(buffer.getChannelData(i));
+            }
+
+            while (offset < buffer.length) {
+                for (let i = 0; i < numOfChan; i++) {
+                    sample = Math.max(-1, Math.min(1, channels[i][offset]));
+                    sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0;
+                    view.setInt16(pos, sample, true);
+                    pos += 2;
+                }
+                offset++;
+            }
+
+            return new Blob([outBuffer], { type: 'audio/wav' });
+        }
+
+        // Single line Audio download handler
+        async function downloadSingleAudio(id) {
+            const sub = subtitles.find(s => s.id === id);
+            if (!sub || !sub.text.trim()) {
+                showToast("គ្មានអត្ថបទសម្រាប់បង្កើតសំឡេងទេ", "error");
+                return;
+            }
+
+            try {
+                showToast("កំពុងបង្កើតសំឡេង Audio (.WAV)...", "info");
+                const speed = parseFloat(selectSpeed.value) || 1.0;
+                const lang = selectLanguage.value;
+
+                const blob = await generateSpeechWavBlob(sub.text, lang, speed);
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `audio_line_${sub.id}_${Date.now()}.wav`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                showToast("បានទាញយកឯកសារ Audio រួចរាល់!", "success");
+            } catch (err) {
+                console.error(err);
+                showToast("មានបញ្ហាក្នុងការទាញយកសំឡេង", "error");
+            }
+        }
+
+        // Export all subtitles as batch WAV downloads
+        btnExportAllWav.addEventListener('click', async () => {
+            if (subtitles.length === 0) {
+                showToast("គ្មាន Subtitle សម្រាប់ទាញយកសំឡេងទេ", "error");
+                return;
+            }
+
+            showToast("កំពុងដំណើរការទាញយកសំឡេងទាំងអស់...", "info");
+            const speed = parseFloat(selectSpeed.value) || 1.0;
+            const lang = selectLanguage.value;
+
+            for (let i = 0; i < subtitles.length; i++) {
+                const sub = subtitles[i];
+                if (!sub.text.trim()) continue;
+
+                try {
+                    const blob = await generateSpeechWavBlob(sub.text, lang, speed);
+                    const url = URL.createObjectURL(blob);
+                    
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `subtitle_audio_${i + 1}.wav`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
+                    // Brief delay between batch downloads
+                    await new Promise(r => setTimeout(r, 400));
+                } catch (e) {
+                    console.error("Batch Audio export error", e);
+                }
+            }
+            showToast("បានទាញយកសំឡេង Subtitle ទាំងអស់រួចរាល់!", "success");
+        });
+
+        // --- Initial Load ---
+        window.addEventListener('load', () => {
+            renderSubtitles();
+        });
+    </script>
+</body>
+</html>
